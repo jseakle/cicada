@@ -307,7 +307,7 @@ function preload() {
     //poem = loadFont('Great Pro.ttf')
     //poem = loadFont('Myope.ttf')
     //poem = loadFont('Irony.ttf')
-    poem = loadFont('Try Pro.ttf')
+    poem = loadFont('Rank Gold.ttf')
 }
 
 function txtimg(txt) {
