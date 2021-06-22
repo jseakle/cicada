@@ -1,14 +1,17 @@
 var ZONE_WIDTH = 900
 var ZONE_HEIGHT = 700
 var UI_HEIGHT = 200
+var PANEL_WIDTH = 200
+var INVENTORY_WIDTH = ZONE_WIDTH - PANEL_WIDTH
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
 
-var image_names = ["gradient", "mushroom"]
+var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU"]
 
 var ASSETS_TO_LOAD = image_names.length
 
 var images = {}
+
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -77,13 +80,7 @@ class Sprite {
     }
 
     make_word() {
-        if(!this.wordlist) {
-            return
-        }
-
-        var word = choice(this.wordlist)
-
-        game.zone.texts.push(new Text(word, this.center_x, this.center_y - 50))
+    
     }
 
     draw() {
@@ -105,12 +102,30 @@ class Sprite {
 }
 
 class Arrow extends Sprite {
-    constructor(x, y, angle) {
-        super("arrow.png")
 
-        this.x = x;
-        this.y = y;
-        this.angle = angle
+    constructor(x, y, dir, to_zone) {
+        super("arrow"+dir, x, y)
+        this.to_zone = to_zone
+    }
+
+    click() {
+        game.zone = game.zones[this.to_zone]
+    }
+
+}
+
+class Item extends Sprite {
+    click() {
+        var word = choice(this.wordlist)
+        game.zone.texts.push(new Text(word, this.center_x, this.center_y - this.image.height/2 - 30))
+    }
+}
+
+class Mushroom extends Item {
+    constructor(x, y) {
+        super("mushroom", x, y)
+        this.wordlist = ['emergence', 'chrysalis', 'unison']
+        //this.scale = 4
     }
 }
 
@@ -135,10 +150,11 @@ class Zone extends Sprite {
 class Forest extends Zone {
 
     constructor() {
-        super("forest.png")
+        super("forest")
 
         this.sprites = [
-            new Mushroom(600,500)
+            new Mushroom(600,500),
+            new Arrow(ZONE_WIDTH/2, 100, "U", "oak")
             //new Arrow(ZONE_WIDTH/2, 40),
         ]
 
@@ -147,6 +163,9 @@ class Forest extends Zone {
     }
 
     draw() {
+        fill('rgba(100,20,20,50)')
+        rect(0, 0, ZONE_WIDTH, ZONE_HEIGHT)
+
         this.sprites.forEach((sprite) => {
             sprite.draw();
         })
@@ -157,11 +176,33 @@ class Forest extends Zone {
     }
 }
 
-class Mushroom extends Sprite {
-    constructor(x, y) {
-        super("mushroom", x, y)
-        this.wordlist = ['emergence', 'chrysalis', 'unison']
-        //this.scale = 4
+class Oak extends Zone {
+
+    constructor() {
+        super("oak")
+
+        this.sprites = [
+            new Mushroom(200,500),
+            new Arrow(ZONE_WIDTH/2, ZONE_HEIGHT-100, "D", "forest")
+            //new Arrow(ZONE_WIDTH/2, 40),
+        ]
+
+        this.texts = [
+        ]
+    }
+
+    draw() {
+
+        fill(20,100,20)
+        rect(0, 0, ZONE_WIDTH, ZONE_HEIGHT)
+    
+        this.sprites.forEach((sprite) => {
+            sprite.draw();
+        })
+
+        this.texts.forEach((text) => {
+            text.draw();
+        })
     }
 }
 
@@ -254,23 +295,25 @@ async function mouseClicked() {
 class Game {
 
     constructor() {
-        this.zones = [
-            new Forest(),
+        this.inventory_texts = []
+        this.setup()
+    }
+
+    setup() {
+        this.zones = {
+            "forest": new Forest(),
+            "oak": new Oak(),
             //new Oak(),
         /*    new Pond(),
             new Yard(),p
             new Barn(),
             new Sky(),*/
-        ]
-        this.setup()
-    }
-
-    setup() {
-        this.zone = this.zones[0]
+        }
+        this.zone = this.zones["forest"]
     }
 
     check_drag() {
-        this.zone.texts.some((text) => {
+        this.zone.texts.concat(this.inventory_texts).some((text) => {
             if(text.is_moused()) {
                 text.start_dragging();
                 return true;
@@ -278,36 +321,70 @@ class Game {
         })
     }
 
+    undrag() {
+        for(var i=0; i<this.zone.texts.length;i++) {
+            text = this.zone.texts[i]
+            if(text.dragging) {
+                text.stop_dragging();
+                if(this.in_inventory(text)) {
+                    console.log(1)
+                    this.zone.texts.splice(i, 1)
+                    this.inventory_texts.push(text)
+                }
+                break;
+            }
+        }
+        
+        for(var i=0; i<this.inventory_texts.length;i++) {
+            text = this.inventory_texts[i]
+            if(text.dragging) {
+                text.stop_dragging();
+                if(!this.in_inventory(text)) {
+                    this.inventory_texts.splice(i, 1)
+                    this.zone.texts.push(text)
+                }
+                break;
+            }
+        }
+    }
+
     check_click() {
         this.zone.sprites.some((sprite) => {
             if(sprite.is_moused()) {
-                sprite.make_word()
+                sprite.click()
                 return true
             }
         })
     }
 
-    undrag() {
-        this.zone.texts.some((text) => {
-            if(text.dragging) {
-                text.stop_dragging();
-            }
-        })
+    in_inventory(sprite) {
+        return sprite.center_y > ZONE_HEIGHT && sprite.center_x < INVENTORY_WIDTH
     }
+
 
     draw() {
         this.zone.draw()
+        this.inventory_texts.forEach((text) => {
+            text.draw()
+        })
         fill(0)
         line(0, ZONE_HEIGHT, ZONE_WIDTH, ZONE_HEIGHT)
     }
 }
 
 let poem;
-function preload() {
+async function preload() {
     //poem = loadFont('Great Pro.ttf')
     //poem = loadFont('Myope.ttf')
     //poem = loadFont('Irony.ttf')
     poem = loadFont('Rank Gold.ttf')
+    await asyncForEach(image_names, (name) => {
+        images[name] = loadImage("images/"+name+".png", img => {
+            console.log(images[name])
+            loaded += 1
+        })
+    })
+
 }
 
 function txtimg(txt) {
@@ -348,11 +425,6 @@ var game;
 var loaded = 0;
 function setup() {
     createCanvas(ZONE_WIDTH, ZONE_HEIGHT + UI_HEIGHT);
-    image_names.forEach((name) => {
-        images[name] = loadImage("images/"+name+".png", img => {
-            loaded += 1
-        })
-    })
 }
 
 function draw() {
