@@ -242,7 +242,7 @@ class Text extends Sprite {
             return true
         }
 
-        return game.zone.texts.some((text) => {
+        return game.zone.texts.concat(game.inventory_texts).some((text) => {
             if(text === this) {
                 return false
             }
