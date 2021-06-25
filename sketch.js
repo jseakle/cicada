@@ -1,12 +1,12 @@
-var ZONE_WIDTH = 900
-var ZONE_HEIGHT = 700
-var UI_HEIGHT = 200
+var ZONE_WIDTH = 1200
+var ZONE_HEIGHT = 560
+var UI_HEIGHT = 160
 var PANEL_WIDTH = 200
 var INVENTORY_WIDTH = ZONE_WIDTH - PANEL_WIDTH
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
 
-var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU"]
+var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun"]
 
 var ASSETS_TO_LOAD = image_names.length
 
@@ -115,9 +115,16 @@ class Arrow extends Sprite {
 }
 
 class Item extends Sprite {
+
+    constructor(image, x, y) {
+        super(image, x, y)
+        this.spawn_x = this.center_x
+        this.spawn_y = this.center_y - this.image.height/2 - 30
+    }
+    
     click() {
         var word = choice(this.wordlist)
-        game.zone.texts.push(new Text(word, this.center_x, this.center_y - this.image.height/2 - 30))
+        game.zone.texts.push(new Text(word, this.spawn_x, this.spawn_y))
     }
 }
 
@@ -129,20 +136,49 @@ class Mushroom extends Item {
     }
 }
 
+class Sun extends Item {
+    constructor(x, y) {
+        super("sun", x, y)
+        this.spawn_y = this.center_y
+        this.wordlist = ['emergence', 'chrysalis', 'unison']
+        //this.scale = 4
+    }
+}
+
+class Birds extends Item {
+    constructor(x, y) {
+        super("birds", x, y)
+        this.wordlist = ['emergence', 'chrysalis', 'unison']
+        //this.scale = 4
+    }
+}
+
+class Cloud extends Item {
+    constructor(x, y) {
+        super("cloud", x, y)
+        this.spawn_y = this.center_y
+        this.wordlist = ['emergence', 'chrysalis', 'unison']
+        //this.scale = 4
+    }
+}
+
+
 class Zone extends Sprite {
     constructor(name) {
         super(name)
         this.sprites = []
-        this.words = []
+        this.texts = []
     }
 
     draw() {
+        image(this.image,0,0)
+        
         this.sprites.forEach((sprite) => {
             sprite.draw()
         })
 
-        this.words.forEach((word) => {
-            word.draw()
+        this.texts.forEach((text) => {
+            text.draw()
         })
     }
 }
@@ -154,7 +190,7 @@ class Forest extends Zone {
 
         this.sprites = [
             new Mushroom(600,500),
-            new Arrow(ZONE_WIDTH/2, 100, "U", "oak")
+            new Arrow(ZONE_WIDTH/2, 100, "U", "sky")
             //new Arrow(ZONE_WIDTH/2, 40),
         ]
 
@@ -176,6 +212,22 @@ class Forest extends Zone {
     }
 }
 
+class Sky extends Zone {
+
+    constructor() {
+        super("sky")
+
+        this.sprites = [
+            new Sun(ZONE_WIDTH/2, 120),
+            new Cloud(ZONE_WIDTH*.82, 120),
+            new Birds(ZONE_HEIGHT/4, 200),
+            new Arrow(ZONE_WIDTH/2, ZONE_HEIGHT-100, "D", "forest")
+        ]
+    }
+
+}
+        
+            
 class Oak extends Zone {
 
     constructor() {
@@ -187,23 +239,9 @@ class Oak extends Zone {
             //new Arrow(ZONE_WIDTH/2, 40),
         ]
 
-        this.texts = [
-        ]
+        
     }
 
-    draw() {
-
-        fill(20,100,20)
-        rect(0, 0, ZONE_WIDTH, ZONE_HEIGHT)
-    
-        this.sprites.forEach((sprite) => {
-            sprite.draw();
-        })
-
-        this.texts.forEach((text) => {
-            text.draw();
-        })
-    }
 }
 
 
@@ -215,6 +253,12 @@ class Text extends Sprite {
         this.word = word
         this.dragging = false;
         this.set_position(x, y)
+        var to_delete = this.overlapping()
+        while(to_delete) {
+            console.log(game.zone.texts, to_delete)
+            game.zone.texts.splice(game.zone.texts.indexOf(to_delete), 1)
+            to_delete = this.overlapping()
+        }
     }
 
     start_dragging() {
@@ -238,11 +282,11 @@ class Text extends Sprite {
         var top = this.center_y - this.image.height/2
         var bot = this.center_y + this.image.height/2
 
-        if(left < -10 || right > ZONE_WIDTH + 10 || top < -10 || bot > ZONE_HEIGHT + UI_HEIGHT || bot > ZONE_HEIGHT && top < ZONE_HEIGHT) {
+        if(left < -(this.image.width/2) || right > ZONE_WIDTH + this.image.width/2 || top < -10 || bot > ZONE_HEIGHT + UI_HEIGHT || bot > ZONE_HEIGHT && top < ZONE_HEIGHT) {
             return true
         }
 
-        return game.zone.texts.concat(game.inventory_texts).some((text) => {
+        return game.zone.texts.concat(game.inventory_texts).find((text) => {
             if(text === this) {
                 return false
             }
@@ -256,7 +300,6 @@ class Text extends Sprite {
                 return false
             }
 
-            console.log(text.word)
             return true
         })
     }
@@ -271,7 +314,9 @@ class Text extends Sprite {
 
 async function mousePressed() {
     if(mouseButton === LEFT) {
-        game.check_drag()
+        if(!game.check_drag()) {
+            game.check_click()
+        }
     } else {
         game.undrag();
     }
@@ -280,14 +325,8 @@ async function mousePressed() {
 
 async function mouseReleased() {
     game.undrag();
+    game.finish_click();
     return false;
-}
-
-async function mouseClicked() {
-    if(mouseButton === LEFT) {
-        game.check_click()
-    }
-    return false
 }
 
 
@@ -303,6 +342,7 @@ class Game {
         this.zones = {
             "forest": new Forest(),
             "oak": new Oak(),
+            "sky": new Sky(),
             //new Oak(),
         /*    new Pond(),
             new Yard(),p
@@ -313,7 +353,7 @@ class Game {
     }
 
     check_drag() {
-        this.zone.texts.concat(this.inventory_texts).some((text) => {
+        return this.zone.texts.concat(this.inventory_texts).some((text) => {
             if(text.is_moused()) {
                 text.start_dragging();
                 return true;
@@ -351,11 +391,19 @@ class Game {
     check_click() {
         this.zone.sprites.some((sprite) => {
             if(sprite.is_moused()) {
-                sprite.click()
+                this.possibly_clicked = sprite
                 return true
             }
         })
     }
+
+    finish_click() {
+        if(this.possibly_clicked && this.possibly_clicked.is_moused()) {
+            this.possibly_clicked.click()
+            this.possibly_clicked = undefined
+        }
+    }
+            
 
     in_inventory(sprite) {
         return sprite.center_y > ZONE_HEIGHT && sprite.center_x < INVENTORY_WIDTH
