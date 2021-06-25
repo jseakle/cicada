@@ -105,6 +105,7 @@ class Arrow extends Sprite {
 
     constructor(x, y, dir, to_zone) {
         super("arrow"+dir, x, y)
+        this.scale = .5
         this.to_zone = to_zone
     }
 
@@ -157,6 +158,7 @@ class Cloud extends Item {
     constructor(x, y) {
         super("cloud", x, y)
         this.spawn_y = this.center_y
+        this.scale = .8
         this.wordlist = ['emergence', 'chrysalis', 'unison']
         //this.scale = 4
     }
@@ -190,7 +192,7 @@ class Forest extends Zone {
 
         this.sprites = [
             new Mushroom(600,500),
-            new Arrow(ZONE_WIDTH/2, 100, "U", "sky")
+            new Arrow(ZONE_WIDTH/2, 65, "U", "sky")
             //new Arrow(ZONE_WIDTH/2, 40),
         ]
 
@@ -221,7 +223,7 @@ class Sky extends Zone {
             new Sun(ZONE_WIDTH/2, 120),
             new Cloud(ZONE_WIDTH*.82, 120),
             new Birds(ZONE_HEIGHT/4, 200),
-            new Arrow(ZONE_WIDTH/2, ZONE_HEIGHT-100, "D", "forest")
+            new Arrow(ZONE_WIDTH/2 - 50, ZONE_HEIGHT-65, "D", "forest")
         ]
     }
 
@@ -255,7 +257,6 @@ class Text extends Sprite {
         this.set_position(x, y)
         var to_delete = this.overlapping()
         while(to_delete) {
-            console.log(game.zone.texts, to_delete)
             game.zone.texts.splice(game.zone.texts.indexOf(to_delete), 1)
             to_delete = this.overlapping()
         }
@@ -367,7 +368,6 @@ class Game {
             if(text.dragging) {
                 text.stop_dragging();
                 if(this.in_inventory(text)) {
-                    console.log(1)
                     this.zone.texts.splice(i, 1)
                     this.inventory_texts.push(text)
                 }
@@ -428,7 +428,6 @@ async function preload() {
     poem = loadFont('Rank Gold.ttf')
     await asyncForEach(image_names, (name) => {
         images[name] = loadImage("images/"+name+".png", img => {
-            console.log(images[name])
             loaded += 1
         })
     })
