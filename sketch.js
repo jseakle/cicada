@@ -14,6 +14,7 @@ var ASSETS_TO_LOAD = image_names.length
 
 var images = {}
 
+var wordsounds = {}
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -91,7 +92,7 @@ class Sprite {
         }
         push()
         if(this.center_x === undefined) {
-            console.log(1)
+            console.log('bad')
         }
         translate(this.center_x, this.center_y)
         if(this.scale) {
@@ -122,7 +123,7 @@ class Item extends Sprite {
     constructor(image, x, y) {
         super(image, x, y)
         this.spawn_x = this.center_x
-        this.spawn_y = this.center_y - this.image.height/2 - 30
+        this.spawn_y = this.center_y - Math.floor(this.image.height/2) - 30
     }
     
     click() {
@@ -134,7 +135,7 @@ class Item extends Sprite {
 class Mushroom extends Item {
     constructor(x, y) {
         super("mushroom", x, y)
-        this.wordlist = ['emergence', 'chrysalis', 'unison']
+        this.wordlist = ['bowing', 'bit', 'active', 'clearing']
         //this.scale = 4
     }
 }
@@ -172,6 +173,41 @@ class Zone extends Sprite {
         super(name)
         this.sprites = []
         this.texts = []
+    }
+
+    async speak() {
+        var loc_map = {}
+        this.texts.forEach((text) => {
+            loc_map[str(Math.floor(text.center_x))+","+str(Math.floor(text.center_y))] = text
+        })
+        console.log(loc_map)
+        var timer = 0
+        this.dots = []
+        for(var i=0;i<ZONE_HEIGHT;i+=3) {
+            for(var j=0;j<ZONE_WIDTH/4;j++) {
+                var played = 0
+                for(var c=0;c<4;c++) {
+                    var txt = loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i)] || loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i-1)] || loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i-2)]
+                    this.dots.push(createVector(ZONE_WIDTH/4*c+j, i))
+                    if(txt) {
+                        wordsounds[txt.word].play()
+                        played += 1
+                        console.log(i, j, c)
+                    }
+                }
+                if(played) {
+                    await(sleep(200))
+                    console.log(played)
+                }
+                timer += 1
+                if(timer == 20) {
+                    await sleep(1)
+                    timer = 0
+                }
+                this.dots = []
+
+            }
+        }
     }
 
     draw() {
@@ -213,6 +249,17 @@ class Forest extends Zone {
         this.texts.forEach((text) => {
             text.draw();
         })
+        fill(0)
+        line(ZONE_WIDTH/4, 0, ZONE_WIDTH/4, ZONE_HEIGHT)
+        line(ZONE_WIDTH/4 * 2, 0, ZONE_WIDTH/4 * 2, ZONE_HEIGHT)
+        line(ZONE_WIDTH/4 * 3, 0, ZONE_WIDTH/4 * 3, ZONE_HEIGHT)
+
+        if(this.dots) {
+            this.dots.forEach((dot) => {
+                ellipse(dot.x, dot.y, 3)
+            })
+        }
+
     }
 }
 
@@ -451,6 +498,12 @@ async function preload() {
 }
 
 function txtimg(txt) {
+    if(typeof wordsounds[txt] === 'undefined') {
+        loadSound('sounds/'+txt+'.mp3', (snd) => {
+            wordsounds[txt] = snd
+            snd.playMode('sustain')
+        })
+    }
     bounds = poem.textBounds(txt, 0, 0, FONT_SIZE)
     if(bounds.w - int(bounds.w) > 0) {
         bounds.w = int(bounds.w + 1)
