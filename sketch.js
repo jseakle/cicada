@@ -6,6 +6,7 @@ var INVENTORY_WIDTH = ZONE_WIDTH - PANEL_WIDTH
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4
+var FRAMERATE = 60
 
 var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun"]
 
@@ -487,6 +488,7 @@ var game;
 var loaded = 0;
 function setup() {
     createCanvas(ZONE_WIDTH, ZONE_HEIGHT + UI_HEIGHT);
+    frameRate(FRAMERATE)
 }
 
 function draw() {
