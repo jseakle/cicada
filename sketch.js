@@ -5,6 +5,7 @@ var PANEL_WIDTH = 200
 var INVENTORY_WIDTH = ZONE_WIDTH - PANEL_WIDTH
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
+var SLIDE_SPEED = 4
 
 var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun"]
 
@@ -273,7 +274,9 @@ class Text extends Sprite {
     stop_dragging() {
         this.dragging = false;
         if( this.overlapping() ) {
-            this.set_position(this.old_x, this.old_y)
+            this.target = createVector(this.old_x, this.old_y)
+        } else {
+            this.target = undefined
         }
     }
 
@@ -308,6 +311,17 @@ class Text extends Sprite {
     draw() {
         if(this.dragging) {
             this.set_position(mouseX + this.mouse_offset_x, mouseY + this.mouse_offset_y)
+        }
+        if(this.target) {
+            var cur_vec = createVector(this.center_x, this.center_y)
+            var mov_vec = p5.Vector.sub(this.target, cur_vec)
+            if(SLIDE_SPEED >= cur_vec.dist(this.target)) {
+                mov_vec.setMag(cur_vec.dist(this.target))
+            } else {
+                mov_vec.setMag(SLIDE_SPEED)
+            }
+            var result_vec = p5.Vector.add(cur_vec, mov_vec)
+            this.set_position(result_vec.x, result_vec.y)
         }
         super.draw()
     }
@@ -406,7 +420,7 @@ class Game {
             
 
     in_inventory(sprite) {
-        return sprite.center_y > ZONE_HEIGHT && sprite.center_x < INVENTORY_WIDTH
+        return sprite.center_y > ZONE_HEIGHT && sprite.center_x + sprite.image.width/2 < INVENTORY_WIDTH
     }
 
 
@@ -417,6 +431,7 @@ class Game {
         })
         fill(0)
         line(0, ZONE_HEIGHT, ZONE_WIDTH, ZONE_HEIGHT)
+        line(INVENTORY_WIDTH, ZONE_HEIGHT, INVENTORY_WIDTH, ZONE_HEIGHT+UI_HEIGHT)
     }
 }
 
