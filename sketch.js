@@ -188,7 +188,6 @@ class Zone extends Sprite {
         this.texts.forEach((text) => {
             loc_map[str(Math.floor(text.center_x))+","+str(Math.floor(text.center_y))] = text
         })
-        console.log(loc_map)
         var timer = 0
         this.dots = []
         for(var i=0;i<ZONE_HEIGHT;i+=3) {
@@ -200,12 +199,10 @@ class Zone extends Sprite {
                     if(txt) {
                         wordsounds[txt.word].play()
                         played += 1
-                        console.log(i, j, c)
                     }
                 }
                 if(played) {
                     await(sleep(200))
-                    console.log(played)
                 }
                 timer += 1
                 if(timer == 20) {
@@ -477,7 +474,6 @@ class Game {
         return this.zone.texts.concat(this.inventory_texts).some((text) => {
             if(text.is_moused()) {
                 text.start_dragging();
-                console.log(1)
                 return true;
             }
         })
