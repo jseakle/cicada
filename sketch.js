@@ -8,7 +8,7 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4
 var FRAMERATE = 60
 
-var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun"]
+var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -505,13 +505,11 @@ class Game {
 
 
     draw() {
+        image(images["inventory"], 0, ZONE_HEIGHT)
         this.zone.draw()
         this.inventory_texts.forEach((text) => {
             text.draw()
         })
-        fill(0)
-        line(0, ZONE_HEIGHT, ZONE_WIDTH, ZONE_HEIGHT)
-        line(INVENTORY_WIDTH, ZONE_HEIGHT, INVENTORY_WIDTH, ZONE_HEIGHT+UI_HEIGHT)
     }
 }
 
