@@ -8,7 +8,7 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4
 var FRAMERATE = 60
 
-var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory"]
+var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -97,7 +97,11 @@ class Sprite {
         }
         translate(this.center_x, this.center_y)
         if(this.scale) {
-            scale(this.scale)
+            if(this.yscale) {
+                scale(this.scale, this.yscale)
+            } else {
+                scale(this.scale)
+            }
         }
         rotate(radians(-this.angle))
         image(this.image, -this.image.width/2, -this.image.height/2)
@@ -109,7 +113,7 @@ class Arrow extends Sprite {
 
     constructor(x, y, dir, to_zone) {
         super("arrow"+dir, x, y)
-        this.scale = .5
+        this.scale = .4
         this.to_zone = to_zone
     }
 
@@ -130,6 +134,38 @@ class Item extends Sprite {
     click() {
         var word = choice(this.wordlist)
         game.zone.texts.push(new Text(word, this.spawn_x, this.spawn_y))
+    }
+}
+
+class Cicada extends Item {
+    constructor(img, x, y) {
+        super(img, x, y)
+        this.scale = .9
+    }
+}
+
+class Normal extends Cicada {
+    constructor() {
+        super("normal", 179, 340)
+        this.angle = 15
+    }
+}
+class Tophat extends Cicada {
+    constructor() {
+        super("tophat", 450, 220)
+    }
+}
+class Cap extends Cicada {
+    constructor() {
+        super("cap", 750, 200)
+    }
+}
+class Cowboy extends Cicada {
+    constructor() {
+        super("cowboy", 1050, 100)
+        this.scale = -.9
+        this.yscale = .9
+        this.angle = 10
     }
 }
 
@@ -230,9 +266,12 @@ class Forest extends Zone {
         super("start")
 
         this.sprites = [
-            new Mushroom(600,500),
-            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "tree"),
-            new Arrow(70, ZONE_HEIGHT/2, "L", "pond")
+            new Arrow(ZONE_WIDTH-60, ZONE_HEIGHT/2 + 70, "R", "tree"),
+            new Arrow(60, ZONE_HEIGHT/2 + 180, "L", "pond"),
+            new Normal(),
+            new Tophat(),
+            new Cap(),
+            new Cowboy()
         ]
 
         this.texts = [
@@ -285,7 +324,7 @@ class Tree extends Zone {
 
         this.sprites = [
             new Mushroom(200,500),
-            new Arrow(70, ZONE_HEIGHT/2, "L", "forest"),
+            new Arrow(70, ZONE_HEIGHT/2 + 50, "L", "forest"),
             new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "barn")
         ]
     }
@@ -298,7 +337,7 @@ class Pond extends Zone {
 
         this.sprites = [
             new Arrow(70, ZONE_HEIGHT/2, "L", "yard"),
-            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "forest")
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 180, "R", "forest")
         ]
     }
 }
@@ -309,9 +348,9 @@ class Yard extends Zone {
         super("yard")
 
         this.sprites = [
-            new Arrow(70, ZONE_HEIGHT/2, "L", "barn"),
+            new Arrow(70, ZONE_HEIGHT/2 + 100, "L", "barn"),
             new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "pond"),
-            new Arrow(ZONE_WIDTH/3, 100, "U", "sky")
+            new Arrow(ZONE_WIDTH/3 - 10, 100, "U", "sky")
         ]
     }
 }
@@ -322,9 +361,9 @@ class Barn extends Zone {
         super("barn")
 
         this.sprites = [
-            new Arrow(70, ZONE_HEIGHT/2, "L", "tree"),
-            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "yard"),
-            new Arrow(2*(ZONE_WIDTH/3), 100, "U", "sky")
+            new Arrow(70, ZONE_HEIGHT/2 + 90, "L", "tree"),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 100, "R", "yard"),
+            new Arrow(2*(ZONE_WIDTH/3) + 130, 55, "U", "sky")
         ]
     }
 }
