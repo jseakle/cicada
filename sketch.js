@@ -1,8 +1,6 @@
 var ZONE_WIDTH = 1200
 var ZONE_HEIGHT = 560
 var UI_HEIGHT = 160
-var PANEL_WIDTH = 200
-var INVENTORY_WIDTH = ZONE_WIDTH - PANEL_WIDTH
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4
@@ -523,7 +521,7 @@ class Game {
             
 
     in_inventory(sprite) {
-        return sprite.center_y > ZONE_HEIGHT && sprite.center_x + sprite.image.width/2 < INVENTORY_WIDTH
+        return sprite.center_y > ZONE_HEIGHT && sprite.center_x + sprite.image.width/2 < ZONE_WIDTH
     }
 
 
