@@ -9,6 +9,7 @@ var SLIDE_SPEED = 4
 var FRAMERATE = 60
 
 var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun"]
+var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
 
@@ -226,12 +227,12 @@ class Zone extends Sprite {
 class Forest extends Zone {
 
     constructor() {
-        super("forest")
+        super("start")
 
         this.sprites = [
             new Mushroom(600,500),
-            new Arrow(ZONE_WIDTH/2, 65, "U", "sky")
-            //new Arrow(ZONE_WIDTH/2, 40),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "tree"),
+            new Arrow(70, ZONE_HEIGHT/2, "L", "pond")
         ]
 
         this.texts = [
@@ -239,9 +240,7 @@ class Forest extends Zone {
     }
 
     draw() {
-        fill('rgba(100,20,20,50)')
-        rect(0, 0, ZONE_WIDTH, ZONE_HEIGHT)
-
+        super.draw()
         this.sprites.forEach((sprite) => {
             sprite.draw();
         })
@@ -272,27 +271,62 @@ class Sky extends Zone {
             new Sun(ZONE_WIDTH/2, 120),
             new Cloud(ZONE_WIDTH*.82, 120),
             new Birds(ZONE_HEIGHT/4, 200),
-            new Arrow(ZONE_WIDTH/2 - 50, ZONE_HEIGHT-65, "D", "forest")
+            new Arrow(ZONE_WIDTH/3, ZONE_HEIGHT-65, "D", "barn"),
+            new Arrow(2*(ZONE_WIDTH/3), ZONE_HEIGHT-65, "D", "yard")
         ]
     }
-
 }
         
             
-class Oak extends Zone {
+class Tree extends Zone {
 
     constructor() {
-        super("oak")
+        super("tree")
 
         this.sprites = [
             new Mushroom(200,500),
-            new Arrow(ZONE_WIDTH/2, ZONE_HEIGHT-100, "D", "forest")
-            //new Arrow(ZONE_WIDTH/2, 40),
+            new Arrow(70, ZONE_HEIGHT/2, "L", "forest"),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "barn")
         ]
-
-        
     }
+}
 
+class Pond extends Zone {
+
+    constructor() {
+        super("pond")
+
+        this.sprites = [
+            new Arrow(70, ZONE_HEIGHT/2, "L", "yard"),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "forest")
+        ]
+    }
+}
+
+class Yard extends Zone {
+
+    constructor() {
+        super("yard")
+
+        this.sprites = [
+            new Arrow(70, ZONE_HEIGHT/2, "L", "barn"),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "pond"),
+            new Arrow(ZONE_WIDTH/3, 100, "U", "sky")
+        ]
+    }
+}
+
+class Barn extends Zone {
+
+    constructor() {
+        super("barn")
+
+        this.sprites = [
+            new Arrow(70, ZONE_HEIGHT/2, "L", "tree"),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "yard"),
+            new Arrow(2*(ZONE_WIDTH/3), 100, "U", "sky")
+        ]
+    }
 }
 
 
@@ -404,13 +438,11 @@ class Game {
     setup() {
         this.zones = {
             "forest": new Forest(),
-            "oak": new Oak(),
+            "tree": new Tree(),
             "sky": new Sky(),
-            //new Oak(),
-        /*    new Pond(),
-            new Yard(),p
-            new Barn(),
-            new Sky(),*/
+            "pond": new Pond(),
+            "yard": new Yard(),
+            "barn": new Barn(),
         }
         this.zone = this.zones["forest"]
     }
@@ -491,6 +523,11 @@ async function preload() {
     poem = loadFont('Rank Gold.ttf')
     await asyncForEach(image_names, (name) => {
         images[name] = loadImage("images/"+name+".png", img => {
+            loaded += 1
+        })
+    })
+    await asyncForEach(jpg_names, (name) => {
+        images[name] = loadImage("images/"+name+".jpg", img => {
             loaded += 1
         })
     })
