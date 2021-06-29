@@ -8,7 +8,8 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4
 var FRAMERATE = 60
 
-var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat"]
+var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses"
+                   , "owl"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -77,10 +78,11 @@ class Sprite {
     }
 
     is_interior(x, y) {
-        return x > this.center_x - this.image.width/2 &&
-            x < this.center_x + this.image.width/2 &&
-            y > this.center_y - this.image.height/2 &&
-            y < this.center_y + this.image.height/2
+        var sc = Math.abs(this.scale)
+        return x > this.center_x - this.image.width/2 * sc &&
+            x < this.center_x + this.image.width/2 * sc &&
+            y > this.center_y - this.image.height/2 * sc &&
+            y < this.center_y + this.image.height/2 * sc
     }
 
     make_word() {
@@ -125,10 +127,14 @@ class Arrow extends Sprite {
 
 class Item extends Sprite {
 
-    constructor(image, x, y) {
+    constructor(image, x, y, {angle=0, scale=1, yscale=undefined, spawn_y=0}={}) {
         super(image, x, y)
         this.spawn_x = this.center_x
-        this.spawn_y = this.center_y - Math.floor(this.image.height/2) - 30
+        this.spawn_y = spawn_y + this.center_y - Math.floor(this.image.height/2) - 30
+        this.angle = angle
+        this.scale = scale
+        this.yscale = yscale
+        loadJSON('words/'+image+'.json', (wordlist)=>{this.wordlist = wordlist}, (x)=>{})
     }
     
     click() {
@@ -166,41 +172,6 @@ class Cowboy extends Cicada {
         this.scale = -.9
         this.yscale = .9
         this.angle = 10
-    }
-}
-
-class Mushroom extends Item {
-    constructor(x, y) {
-        super("mushroom", x, y)
-        this.wordlist = ['bowing', 'bit', 'active', 'clearing']
-        //this.scale = 4
-    }
-}
-
-class Sun extends Item {
-    constructor(x, y) {
-        super("sun", x, y)
-        this.spawn_y = this.center_y
-        this.wordlist = ['emergence', 'chrysalis', 'unison']
-        //this.scale = 4
-    }
-}
-
-class Birds extends Item {
-    constructor(x, y) {
-        super("birds", x, y)
-        this.wordlist = ['emergence', 'chrysalis', 'unison']
-        //this.scale = 4
-    }
-}
-
-class Cloud extends Item {
-    constructor(x, y) {
-        super("cloud", x, y)
-        this.spawn_y = this.center_y
-        this.scale = .8
-        this.wordlist = ['emergence', 'chrysalis', 'unison']
-        //this.scale = 4
     }
 }
 
@@ -271,7 +242,8 @@ class Forest extends Zone {
             new Normal(),
             new Tophat(),
             new Cap(),
-            new Cowboy()
+            new Cowboy(),
+            new Item('husk', 300, ZONE_HEIGHT - 50)
         ]
 
         this.texts = [
@@ -307,9 +279,9 @@ class Sky extends Zone {
         super("sky")
 
         this.sprites = [
-            new Sun(ZONE_WIDTH/2, 120),
-            new Cloud(ZONE_WIDTH*.82, 120),
-            new Birds(ZONE_HEIGHT/4, 200),
+            new Item('sun', ZONE_WIDTH/2, 120, {'spawn_y': 240}),
+            new Item('cloud', ZONE_WIDTH*.82, 120, {'spawn_y': 115}),
+            new Item('birds', ZONE_HEIGHT/4, 200),
             new Arrow(ZONE_WIDTH/3, ZONE_HEIGHT-65, "D", "barn"),
             new Arrow(2*(ZONE_WIDTH/3), ZONE_HEIGHT-65, "D", "yard")
         ]
@@ -323,9 +295,12 @@ class Tree extends Zone {
         super("tree")
 
         this.sprites = [
-            new Mushroom(200,500),
+            new Item('mushroom', 640, 470, {'angle':270, 'spawn_y':-40}),
+            new Item('moss', 1080, 210, {'angle':0, 'scale':-1, 'yscale':1}),
+            new Item('holes', 440, 305, {'angle':10,'scale':.8}),
+            new Item('leaves', 200, 510),
             new Arrow(70, ZONE_HEIGHT/2 + 50, "L", "forest"),
-            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "barn")
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 100, "R", "barn")
         ]
     }
 }
@@ -336,6 +311,10 @@ class Pond extends Zone {
         super("pond")
 
         this.sprites = [
+            new Item('lily', 980, 360, {'scale':.6, 'angle': 0,'spawn_y':35}),
+            new Item('minnows', 400, 300, {'scale':.5,'spawn_y':60}),
+            new Item('stone', 750, 250, {'scale': .7, 'angle': 180, 'spawn_y':20}),
+            //new Item('turtle', 
             new Arrow(70, ZONE_HEIGHT/2, "L", "yard"),
             new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 180, "R", "forest")
         ]
@@ -348,6 +327,9 @@ class Yard extends Zone {
         super("yard")
 
         this.sprites = [
+            new Item('dogtoy', 930, 480, {'scale': .9, 'spawn_y':16}),
+            new Item('chair', 200, 280, {'scale':-1, 'yscale': 1}),
+            new Item('puff', 600, 320, {'scale': .7, 'spawn_y':30}),
             new Arrow(70, ZONE_HEIGHT/2 + 100, "L", "barn"),
             new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "pond"),
             new Arrow(ZONE_WIDTH/3 - 10, 100, "U", "sky")
@@ -361,8 +343,12 @@ class Barn extends Zone {
         super("barn")
 
         this.sprites = [
+            new Item('owl', 1000, 490),
+            //new Item('slats',
+            new Item('ivy', 450, 395, {'scale': .6, 'spawn_y': 65}),
+            new Item('grasses', 280, 495),
             new Arrow(70, ZONE_HEIGHT/2 + 90, "L", "tree"),
-            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 100, "R", "yard"),
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "yard"),
             new Arrow(2*(ZONE_WIDTH/3) + 130, 55, "U", "sky")
         ]
     }
@@ -377,6 +363,7 @@ class Text extends Sprite {
         this.word = word
         this.dragging = false;
         this.set_position(x, y)
+        this.scale = 1
         var to_delete = this.overlapping()
         while(to_delete) {
             game.zone.texts.splice(game.zone.texts.indexOf(to_delete), 1)
@@ -490,6 +477,7 @@ class Game {
         return this.zone.texts.concat(this.inventory_texts).some((text) => {
             if(text.is_moused()) {
                 text.start_dragging();
+                console.log(1)
                 return true;
             }
         })
