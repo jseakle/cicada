@@ -322,7 +322,7 @@ class Yard extends Zone {
         super("yard")
 
         this.sprites = [
-            new Item('dogtoy', 930, 480, {'scale': .9, 'spawn_y':16}),
+            new Item('dogtoy', 930, 480, {'scale': .8, 'spawn_y':16}),
             new Item('chair', 200, 280, {'scale':-1, 'yscale': 1}),
             new Item('puff', 600, 320, {'scale': .7, 'spawn_y':30}),
             new Arrow(70, ZONE_HEIGHT/2 + 100, "L", "barn"),
