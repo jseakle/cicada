@@ -6,7 +6,7 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4.3
 var FRAMERATE = 60
 
-var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2"]
+var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2", "overlay"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -75,6 +75,8 @@ class Sprite {
     is_moused() {
         return this.is_interior(mouseX, mouseY)
     }
+
+    mouse_down() { }
 
     is_interior(x, y) {
         var sc = Math.abs(this.scale)
@@ -306,8 +308,50 @@ class Button extends Item {
 class Playpause extends Item {
 
     constructor() {
-        super('playpause', 0, 0)
+        super('play_out', 0, 0)
+        this.set_position(ZONE_WIDTH-this.image.width*3-5, ZONE_HEIGHT-this.image.height-5)
+        this.playing = false
     }
+    
+    click() {
+        if(this.playing) {
+            this.image = images['pause_out']
+            game.zone.speak()
+        } else {
+            this.image = images['play_out']
+            game.zone.pause()
+        }
+    }
+
+    mouse_down() {
+        if(this.playing) {
+            this.image = images['pause_in']
+        } else {
+            this.image = images['play_in']
+        }
+    }
+}
+
+class Leave extends Item {
+
+    constructor() {
+        super('leave_out')
+        this.set_position(ZONE_WIDTH,ZONE_HEIGHT-20)
+    }
+
+    click() {
+        game.zone.pause()
+        game.zone = game.zones['forest']
+    }
+
+    mouse_down() {
+        this.image = images['leave_in']
+    }
+
+    mouse_out() {
+        this.image = images['leave_out']
+    }
+
 }
 
 var envelope = new p5.Envelope(2, .3, 14, .3, 2, 0)
@@ -402,7 +446,8 @@ class Compose extends Zone {
             new Cowboy(false),
             new Playpause(),
             new Leave(),
-            new Save()
+            new Save(),
+            new Restart()
         ]        
     }
 }
@@ -429,6 +474,7 @@ class Forest extends Zone {
 
     draw() {
         super.draw()
+        //image(images['overlay'],0,0)
 
         if(this.dots) {
             this.dots.forEach((dot) => {
@@ -625,7 +671,7 @@ async function mousePressed() {
     if(mouseButton === LEFT) {
         if(!game.check_drag()) {
             game.check_click()
-        }
+        } 
     } else {
         game.undrag();
     }
@@ -698,6 +744,7 @@ class Game {
         this.zone.sprites.some((sprite) => {
             if(sprite.is_moused()) {
                 this.possibly_clicked = sprite
+                sprite.mouse_down()
                 return true
             }
         })
