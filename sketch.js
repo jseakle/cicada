@@ -3,10 +3,10 @@ var ZONE_HEIGHT = 560
 var UI_HEIGHT = 160
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
-var SLIDE_SPEED = 4.5
+var SLIDE_SPEED = 4.3
 var FRAMERATE = 60
 
-var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2"]
+var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -126,9 +126,9 @@ class Arrow extends Sprite {
 
 class Item extends Sprite {
 
-    constructor(image, x, y, {angle=0, scale=1, yscale=undefined, spawn_y=0}={}) {
+    constructor(image, x, y, {angle=0, scale=1, yscale=undefined, spawn_y=0, spawn_x=0}={}) {
         super(image, x, y)
-        this.spawn_x = this.center_x
+        this.spawn_x = this.center_x + spawn_x
         this.spawn_y = spawn_y + this.center_y - Math.floor(this.image.height/2) - 30
         this.angle = angle
         this.scale = scale
@@ -138,7 +138,7 @@ class Item extends Sprite {
     
     click() {
         var word = choice(this.wordlist)
-        game.zone.texts.push(new Text(word, this.spawn_x, this.spawn_y))
+        game.zone.texts.push(new Text(word, game.zone.color, this.spawn_x, this.spawn_y))
     }
 }
 
@@ -146,23 +146,106 @@ class Cicada extends Item {
     constructor(img, x, y) {
         super(img, x, y)
         this.scale = .9
+        this.sentence = 0
+        this.space_width = 10
+        this.line_height = 40
+        loadJSON('words/starting.json', (wordlist)=>{this.wordlist = wordlist}, (x)=>{})
+    }
+
+    click() {
+        if(!this.spoken) {
+            var [cursor_x, cursor_y] = [this.spawn_x, this.spawn_y]
+            this.sentences[this.sentence].forEach((line) => {
+                var txts = []
+                var line_length = 0
+                line.forEach((token) => {
+                    if(token !== " ") {
+                        if(token === "WORD") {
+                            token = choice(this.wordlist)
+                            var txt = new Text(token, "blue", 0, 0)
+                        } else {
+                            var txt = new Text(token, "",  0, 0)
+                        }
+                        
+                        txts.push(txt)
+                        line_length += txt.image.width
+                        console.log(line_length)
+                    } else {
+                        txts.push(" ")
+                        line_length += this.space_width
+                    }
+                })
+                cursor_x -= Math.floor(line_length / 2)
+                console.log("cx", cursor_x)
+                txts.forEach((txt) => {
+                    if(txt !== " ") {
+                        txt.set_position(cursor_x + Math.floor(txt.image.width/2), cursor_y)
+                        if([".", "..."].includes(txt.word)) {
+                            txt.center_y += 9
+                        }
+                        game.zone.texts.push(txt)
+                        cursor_x += txt.image.width - 4
+                    } else {
+                        cursor_x += this.space_width
+                    }
+                })
+                cursor_y += this.line_height
+                cursor_x = this.spawn_x
+                
+            })
+            this.spoken = true
+        }
     }
 }
 
 class Normal extends Cicada {
     constructor() {
-        super("normal", 179, 340)
+        super("normal", 157, 346)
         this.angle = 15
+        this.spawn_y -= 160
+        this.sentences = [
+            [
+                /*["what", " ", "can"],
+                ["i", " ", "yell"],
+                ["for", " ", "WORD", "?"],*/
+                ["what"],
+                ["can"],
+                ["i"],
+                ["yell"],
+                ["for"],
+                ["WORD", "?"],
+            ]
+        ]
     }
 }
 class Tophat extends Cicada {
     constructor() {
         super("tophat", 450, 220)
+        this.spawn_y -= 40
+        this.sentences = [
+            [
+                ["bring", " ", "me"],
+                ["what", " ", "you", " ", "know"],
+                [], [], [],
+                ["of"],
+                ["WORD", "!"],
+            ]
+        ]
     }
 }
 class Cap extends Cicada {
     constructor() {
         super("cap", 750, 200)
+        this.spawn_y = 25
+        this.spawn_x += 15
+        this.sentences = [
+            [
+                ["can", " ", "i", " ", "really"],
+                ["yell", " ", "about"],
+                ["WORD", "...", "?"],
+                ["help", " ", "me", "!"]
+            ]
+        ]
     }
 }
 class Cowboy extends Cicada {
@@ -171,6 +254,16 @@ class Cowboy extends Cicada {
         this.scale = -.9
         this.yscale = .9
         this.angle = 10
+        this.spawn_y = this.center_y + 80
+        this.sentences = [
+            [
+                ["words", " ", "about"],
+                ["WORD"],
+                ["now", " ", "that"],
+                ["would", " ", "be", " ", "fine", "!"]
+            ]
+        ]
+            
     }
 }
 
@@ -235,7 +328,7 @@ class Zone extends Sprite {
                 for(var c=0;c<4;c++) {
                     var txt = loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i)] || loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i-1)] || loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i-2)]
                     this.dots.push(createVector(ZONE_WIDTH/4*c+j, i))
-                    if(txt) {
+                    if(txt && txt.audio) {
                         wordsounds[txt.word].play()
                         console.log(txt.word)
                         played += 1
@@ -287,15 +380,15 @@ class Forest extends Zone {
 
     constructor() {
         super("start")
-
+        this.color = ""
         this.sprites = [
-            new Arrow(ZONE_WIDTH-60, ZONE_HEIGHT/2 + 70, "R", "tree"),
+            new Arrow(ZONE_WIDTH-60, ZONE_HEIGHT/2 + 80, "R", "tree"),
             new Arrow(60, ZONE_HEIGHT/2 + 180, "L", "pond"),
             new Normal(),
             new Tophat(),
             new Cap(),
             new Cowboy(),
-            new Item('husk', 300, ZONE_HEIGHT - 50),
+            new Item('husk', 700, ZONE_HEIGHT - 60, {"angle": -23}),
             new Button(),
         ]
 
@@ -319,9 +412,9 @@ class Sky extends Zone {
 
     constructor() {
         super("sky")
-
+        this.color = "red"
         this.sprites = [
-            new Item('sun', ZONE_WIDTH/2, 120, {'spawn_y': 240}),
+            new Item('sun', ZONE_WIDTH/2, 120, {'spawn_y': 240, 'spawn_x': 5}),
             new Item('cloud', ZONE_WIDTH*.82, 120, {'spawn_y': 115}),
             new Item('birds', ZONE_HEIGHT/4, 200),
             new Arrow(ZONE_WIDTH/3, ZONE_HEIGHT-65, "D", "barn"),
@@ -335,7 +428,7 @@ class Tree extends Zone {
 
     constructor() {
         super("tree")
-
+        this.color = "brown"
         this.sprites = [
             new Item('mushroom', 640, 470, {'angle':270, 'spawn_y':-40}),
             new Item('moss', 1080, 210, {'angle':0, 'scale':-1, 'yscale':1}),
@@ -351,7 +444,7 @@ class Pond extends Zone {
 
     constructor() {
         super("pond")
-
+        this.color = "purple"
         this.sprites = [
             new Item('lily', 980, 360, {'scale':.6, 'angle': 0,'spawn_y':35}),
             new Item('minnows', 390, 390, {'scale':.4,'spawn_y':60}),
@@ -367,7 +460,7 @@ class Yard extends Zone {
 
     constructor() {
         super("yard")
-
+        this.color = "green"
         this.sprites = [
             new Item('dogtoy', 930, 480, {'scale': .8, 'spawn_y':16}),
             new Item('chair', 200, 280, {'scale':-1, 'yscale': 1}),
@@ -383,7 +476,7 @@ class Barn extends Zone {
 
     constructor() {
         super("barn")
-
+        this.color = "yellow"
         this.sprites = [
             new Item('owl', 1000, 490),
             //new Item('slats',
@@ -399,10 +492,12 @@ class Barn extends Zone {
 
 class Text extends Sprite {
 
-    constructor(word, x, y) {
-        let image = txtimg(word)
+    constructor(word, color, x, y) {
+        var audio = !["!", ",", ".", "?", "-", "..."].includes(word)
+        let image = txtimg(word, color, audio)
         super(image)
         this.word = word
+        this.audio = audio
         this.dragging = false;
         this.set_position(x, y)
         this.scale = 1
@@ -431,10 +526,10 @@ class Text extends Sprite {
     }
 
     overlapping() {
-        var left = this.center_x - this.image.width/2 + 2
-        var right = this.center_x + this.image.width/2 - 2
-        var top = this.center_y - this.image.height/2 + 2
-        var bot = this.center_y + this.image.height/2 - 2
+        var left = this.center_x - this.image.width/2 + 7
+        var right = this.center_x + this.image.width/2 - 7
+        var top = this.center_y - this.image.height/2 + 7
+        var bot = this.center_y + this.image.height/2 - 7
 
         if(left < -(this.image.width/2) || right > ZONE_WIDTH + this.image.width/2 || top < -10 || bot > ZONE_HEIGHT + UI_HEIGHT || bot > ZONE_HEIGHT && top < ZONE_HEIGHT) {
             return true
@@ -601,8 +696,8 @@ async function preload() {
 
 }
 
-function txtimg(txt) {
-    if(typeof wordsounds[txt] === 'undefined') {
+function txtimg(txt, color, audio=true) {
+    if(audio && typeof wordsounds[txt] === 'undefined') {
         loadSound('sounds/'+txt+'.mp3', (snd) => {
             wordsounds[txt] = snd
             snd.playMode('sustain')
@@ -625,7 +720,9 @@ function txtimg(txt) {
     g.text(txt, STROKE_WEIGHT, bounds.h - STROKE_WEIGHT);
     mask = g.get();
     gr = createImage(bounds.w, bounds.h);
-    gr.copy(images['gradient'], 0, 0, bounds.w, bounds.h, 0, 0, bounds.w, bounds.h);
+    var gradient = images['gradient' + color]
+    gr.copy(gradient, 0, 0, bounds.w, bounds.h, 0, 0, bounds.w, bounds.h);
+    
     gr.mask(mask);
     strk = createGraphics(bounds.w, bounds.h);
     strk.textFont(poem);
