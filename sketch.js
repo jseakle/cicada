@@ -15,7 +15,7 @@ var images = {}
 
 var wordsounds = {}
 var sounds = {}
-
+var starting_words
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -119,7 +119,17 @@ class Arrow extends Sprite {
     }
 
     click() {
+        game.zone.sprites.forEach((sprite) => {
+            if(sprite instanceof Cicada) {
+                sprite.spoken_words.forEach((word) => {
+                    game.zone.texts.splice(game.zone.texts.indexOf(word), 1)
+                })
+                sprite.spoken_words = []
+            }
+        })
+                                 
         game.zone = game.zones[this.to_zone]
+        
     }
 
 }
@@ -143,17 +153,20 @@ class Item extends Sprite {
 }
 
 class Cicada extends Item {
-    constructor(img, x, y) {
+    constructor(img, x, y, clickable) {
         super(img, x, y)
+        this.clickable = clickable
         this.scale = .9
         this.sentence = 0
+        this.spoken_words = []
         this.space_width = 10
         this.line_height = 40
-        loadJSON('words/starting.json', (wordlist)=>{this.wordlist = wordlist}, (x)=>{})
+        this.word = choice(starting_words)
+        starting_words.splice(starting_words.indexOf(this.word), 1)
     }
 
     click() {
-        if(!this.spoken) {
+        if(this.clickable && !this.spoken_words.length) {
             var [cursor_x, cursor_y] = [this.spawn_x, this.spawn_y]
             this.sentences[this.sentence].forEach((line) => {
                 var txts = []
@@ -161,12 +174,12 @@ class Cicada extends Item {
                 line.forEach((token) => {
                     if(token !== " ") {
                         if(token === "WORD") {
-                            token = choice(this.wordlist)
+                            token = this.word
                             var txt = new Text(token, "blue", 0, 0)
                         } else {
                             var txt = new Text(token, "",  0, 0)
                         }
-                        
+                        this.spoken_words.push(txt)
                         txts.push(txt)
                         line_length += txt.image.width
                         console.log(line_length)
@@ -199,8 +212,8 @@ class Cicada extends Item {
 }
 
 class Normal extends Cicada {
-    constructor() {
-        super("normal", 157, 346)
+    constructor(clickable=true) {
+        super("normal", 157, 346, clickable)
         this.angle = 15
         this.spawn_y -= 160
         this.sentences = [
@@ -219,8 +232,8 @@ class Normal extends Cicada {
     }
 }
 class Tophat extends Cicada {
-    constructor() {
-        super("tophat", 450, 220)
+    constructor(clickable=true) {
+        super("tophat", 450, 220, clickable)
         this.spawn_y -= 40
         this.sentences = [
             [
@@ -234,8 +247,8 @@ class Tophat extends Cicada {
     }
 }
 class Cap extends Cicada {
-    constructor() {
-        super("cap", 750, 200)
+    constructor(clickable=true) {
+        super("cap", 750, 200, clickable)
         this.spawn_y = 25
         this.spawn_x += 15
         this.sentences = [
@@ -249,8 +262,8 @@ class Cap extends Cicada {
     }
 }
 class Cowboy extends Cicada {
-    constructor() {
-        super("cowboy", 1050, 100)
+    constructor(clickable=true) {
+        super("cowboy", 1050, 100, clickable)
         this.scale = -.9
         this.yscale = .9
         this.angle = 10
@@ -287,6 +300,13 @@ class Button extends Item {
             game.zone.playing = false
             console.log("off")
         }
+    }
+}
+
+class Playpause extends Item {
+
+    constructor() {
+        super('playpause', 0, 0)
     }
 }
 
@@ -373,6 +393,17 @@ class Zone extends Sprite {
 
 class Compose extends Zone {
     constructor() {
+        super("start")
+        this.color = ""
+        this.sprites = [
+            new Normal(false),
+            new Tophat(false),
+            new Cap(false),
+            new Cowboy(false),
+            new Playpause(),
+            new Leave(),
+            new Save()
+        ]        
     }
 }
 
@@ -524,6 +555,14 @@ class Text extends Sprite {
         this.dragging = true;
         this.mouse_offset_x = this.center_x - mouseX
         this.mouse_offset_y = this.center_y - mouseY
+        game.zone.sprites.forEach((sprite) => {
+            if(sprite instanceof Cicada) {
+                var idx = sprite.spoken_words.indexOf(this)
+                if(idx >= 0) {
+                    sprite.spoken_words.splice(idx, 1)
+                }
+            }
+        })
     }
 
     stop_dragging() {
@@ -703,6 +742,7 @@ async function preload() {
         })
     })
     await loadSound('sounds/screaminghour.mp3', (snd) => { sounds['screaminghour'] = snd; snd.setLoop(true)})
+    await loadJSON('words/starting.json', (wordlist) => starting_words = wordlist)
 
 }
 
