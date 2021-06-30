@@ -651,7 +651,7 @@ class Text extends Sprite {
             return true
         }
 
-        return game.zone.texts.concat(game.inventory_texts).find((text) => {
+        return game.zone.texts.concat(game.inventory_texts).concat(game.zone.buttons||[]).find((text) => {
             if(text === this) {
                 return false
             }
