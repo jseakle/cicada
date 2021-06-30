@@ -6,7 +6,7 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4.3
 var FRAMERATE = 60
 
-var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2"]
+var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -494,7 +494,17 @@ class Text extends Sprite {
 
     constructor(word, color, x, y) {
         var audio = !["!", ",", ".", "?", "-", "..."].includes(word)
-        let image = txtimg(word, color, audio)
+        if(audio && typeof wordsounds[word] === 'undefined') {
+            loadSound('sounds/'+word+'.mp3', (snd) => {
+            wordsounds[word] = snd
+            snd.playMode('sustain')
+            })
+        }
+        var graphical_word = word
+        if(word[0] === '_') {
+            graphical_word = word.substring(1)
+        }
+        let image = txtimg(graphical_word, color, audio)
         super(image)
         this.word = word
         this.audio = audio
@@ -696,13 +706,8 @@ async function preload() {
 
 }
 
-function txtimg(txt, color, audio=true) {
-    if(audio && typeof wordsounds[txt] === 'undefined') {
-        loadSound('sounds/'+txt+'.mp3', (snd) => {
-            wordsounds[txt] = snd
-            snd.playMode('sustain')
-        })
-    }
+function txtimg(txt, color) {
+   
     bounds = poem.textBounds(txt, 0, 0, FONT_SIZE)
     if(bounds.w - int(bounds.w) > 0) {
         bounds.w = int(bounds.w + 1)
