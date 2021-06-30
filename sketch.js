@@ -6,7 +6,7 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4.3
 var FRAMERATE = 60
 
-var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2", "overlay"]
+var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2", "overlay", "panel", "leave_in", "leave_out", "play_in", "play_out", "pause_in", "pause_out", "download_in", "download_out", "reset_in", "reset_out"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -77,6 +77,7 @@ class Sprite {
     }
 
     mouse_down() { }
+    mouse_out() { }
 
     is_interior(x, y) {
         var sc = Math.abs(this.scale)
@@ -91,6 +92,9 @@ class Sprite {
     }
 
     draw() {
+        if(this.depressed && !this.is_moused()) {
+            this.mouse_out()
+        }
         if(this.image === undefined) {
             return 'weird'
         }
@@ -145,7 +149,9 @@ class Item extends Sprite {
         this.angle = angle
         this.scale = scale
         this.yscale = yscale
-        loadJSON('words/'+image+'.json', (wordlist)=>{this.wordlist = wordlist}, (x)=>{})
+        if(!(this instanceof Cicada) && !(this instanceof Pressable) && !(this instanceof Button)) {
+            loadJSON('words/'+image+'.json', (wordlist)=>{this.wordlist = wordlist})
+        }
     }
     
     click() {
@@ -184,14 +190,12 @@ class Cicada extends Item {
                         this.spoken_words.push(txt)
                         txts.push(txt)
                         line_length += txt.image.width
-                        console.log(line_length)
                     } else {
                         txts.push(" ")
                         line_length += this.space_width
                     }
                 })
                 cursor_x -= Math.floor(line_length / 2)
-                console.log("cx", cursor_x)
                 txts.forEach((txt) => {
                     if(txt !== " ") {
                         txt.set_position(cursor_x + Math.floor(txt.image.width/2), cursor_y)
@@ -289,70 +293,82 @@ class Button extends Item {
         this.set_position(ZONE_WIDTH-this.image.width/4,
                           ZONE_HEIGHT-this.image.height/4)
         this.scale = .5
-        this.off = true
     }
 
     click() {
-        if(!game.zone.playing) {
-            game.zone.speak()
-            game.zone.playing = true
-            console.log("on")
-        } else {
-            game.zone.pause()
-            game.zone.playing = false
-            console.log("off")
-        }
+        game.zone = game.zones['compose']
     }
 }
 
-class Playpause extends Item {
+class Pressable extends Item {
+
+    mouse_down() {
+        this.depressed = true
+        this.image = this.down
+    }
+
+    mouse_out() {
+        this.image = this.up
+        this.depressed = false
+    }
+}
+
+class Playpause extends Pressable {
 
     constructor() {
         super('play_out', 0, 0)
-        this.set_position(ZONE_WIDTH-this.image.width*3-5, ZONE_HEIGHT-this.image.height-5)
+        this.set_position(957, 515)
+        this.scale = .6
         this.playing = false
     }
     
     click() {
-        if(this.playing) {
+        if(!this.playing) {
             this.image = images['pause_out']
             game.zone.speak()
+            this.playing = true
         } else {
             this.image = images['play_out']
             game.zone.pause()
+            this.playing = false
         }
     }
 
     mouse_down() {
+        this.depressed = true
         if(this.playing) {
             this.image = images['pause_in']
         } else {
             this.image = images['play_in']
         }
     }
+
+    mouse_out() {
+        this.depressed = false
+        if(this.playing) {
+            this.image = images['pause_out']
+        } else {
+            this.image = images['play_out']
+        }
+    }
 }
 
-class Leave extends Item {
+class Leave extends Pressable {
 
     constructor() {
         super('leave_out')
-        this.set_position(ZONE_WIDTH,ZONE_HEIGHT-20)
+        this.set_position(890, 495)
+        this.scale = .6
+        this.down = images['leave_in']
+        this.up = images['leave_out']
     }
 
     click() {
         game.zone.pause()
         game.zone = game.zones['forest']
     }
-
-    mouse_down() {
-        this.image = images['leave_in']
-    }
-
-    mouse_out() {
-        this.image = images['leave_out']
-    }
-
 }
+
 
 var envelope = new p5.Envelope(2, .3, 14, .3, 2, 0)
 class Zone extends Sprite {
@@ -378,14 +394,12 @@ class Zone extends Sprite {
         this.dots = []
         var start_i = this.saved_i || 0
         var start_j = this.saved_j || 0
-        console.log(start_i, start_j)
         var abort = false
         for(var i=start_i;i<ZONE_HEIGHT&&!abort;i+=3) {
             for(var j=start_i;j<ZONE_WIDTH/4&&!abort;j++) {
                 if(this.paused) {
                     this.saved_i = i
                     this.saved_j = j
-                    console.log(this.saved_i, this.saved_j)
                     abort = true
                 }
                 var played = 0
@@ -394,7 +408,6 @@ class Zone extends Sprite {
                     this.dots.push(createVector(ZONE_WIDTH/4*c+j, i))
                     if(txt && txt.audio) {
                         wordsounds[txt.word].play()
-                        console.log(txt.word)
                         played += 1
                     }
                 }
@@ -412,7 +425,6 @@ class Zone extends Sprite {
         }
         if(!abort) {
             [this.saved_i, this.saved_j] = [0,0]
-            this.playing = false
             envelope.triggerRelease(scr)
         }
     }
@@ -444,11 +456,21 @@ class Compose extends Zone {
             new Tophat(false),
             new Cap(false),
             new Cowboy(false),
+        ]
+        this.buttons = [
             new Playpause(),
             new Leave(),
-            new Save(),
-            new Restart()
+//            new Save(),
+            //new Restart()
         ]        
+    }
+
+    draw() {
+        super.draw()
+        image(images['overlay'],0,0)
+        var panel = images['panel']
+        image(panel, ZONE_WIDTH - panel.width*.6, ZONE_HEIGHT - panel.height*.6, panel.width*.6, panel.height*.6)
+        this.buttons.forEach((button) => button.draw())
     }
 }
 
@@ -474,8 +496,7 @@ class Forest extends Zone {
 
     draw() {
         super.draw()
-        //image(images['overlay'],0,0)
-
+        
         if(this.dots) {
             this.dots.forEach((dot) => {
                 ellipse(dot.x, dot.y, 3)
@@ -685,7 +706,6 @@ async function mouseReleased() {
 }
 
 
-
 class Game {
 
     constructor() {
@@ -701,6 +721,7 @@ class Game {
             "pond": new Pond(),
             "yard": new Yard(),
             "barn": new Barn(),
+            "compose": new Compose(),
         }
         this.zone = this.zones["forest"]
     }
@@ -741,7 +762,7 @@ class Game {
     }
 
     check_click() {
-        this.zone.sprites.some((sprite) => {
+        this.zone.sprites.concat(game.zone.buttons||[]).some((sprite) => {
             if(sprite.is_moused()) {
                 this.possibly_clicked = sprite
                 sprite.mouse_down()
