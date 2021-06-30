@@ -3,11 +3,10 @@ var ZONE_HEIGHT = 560
 var UI_HEIGHT = 160
 var FONT_SIZE = 75
 var STROKE_WEIGHT = 5
-var SLIDE_SPEED = 4
+var SLIDE_SPEED = 4.5
 var FRAMERATE = 60
 
-var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses"
-                   , "owl"]
+var image_names = ["gradient", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -15,6 +14,8 @@ var ASSETS_TO_LOAD = image_names.length
 var images = {}
 
 var wordsounds = {}
+var sounds = {}
+
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -173,7 +174,30 @@ class Cowboy extends Cicada {
     }
 }
 
+class Button extends Item {
 
+    constructor() {
+        super('screamingHour1', 0, 0)
+        this.set_position(ZONE_WIDTH-this.image.width/4,
+                          ZONE_HEIGHT-this.image.height/4)
+        this.scale = .5
+        this.off = true
+    }
+
+    click() {
+        if(!game.zone.playing) {
+            game.zone.speak()
+            game.zone.playing = true
+            console.log("on")
+        } else {
+            game.zone.pause()
+            game.zone.playing = false
+            console.log("off")
+        }
+    }
+}
+
+var envelope = new p5.Envelope(2, .3, 14, .3, 2, 0)
 class Zone extends Sprite {
     constructor(name) {
         super(name)
@@ -182,20 +206,38 @@ class Zone extends Sprite {
     }
 
     async speak() {
+        this.paused = false
+        var start = randrange(0,147)
+        var scr = sounds['screaminghour']
+        scr.play()
+        scr.jump(start)
+        
+        envelope.triggerAttack(scr)
         var loc_map = {}
         this.texts.forEach((text) => {
             loc_map[str(Math.floor(text.center_x))+","+str(Math.floor(text.center_y))] = text
         })
         var timer = 0
         this.dots = []
-        for(var i=0;i<ZONE_HEIGHT;i+=3) {
-            for(var j=0;j<ZONE_WIDTH/4;j++) {
+        var start_i = this.saved_i || 0
+        var start_j = this.saved_j || 0
+        console.log(start_i, start_j)
+        var abort = false
+        for(var i=start_i;i<ZONE_HEIGHT&&!abort;i+=3) {
+            for(var j=start_i;j<ZONE_WIDTH/4&&!abort;j++) {
+                if(this.paused) {
+                    this.saved_i = i
+                    this.saved_j = j
+                    console.log(this.saved_i, this.saved_j)
+                    abort = true
+                }
                 var played = 0
                 for(var c=0;c<4;c++) {
                     var txt = loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i)] || loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i-1)] || loc_map[str(ZONE_WIDTH/4*c+j)+","+str(i-2)]
                     this.dots.push(createVector(ZONE_WIDTH/4*c+j, i))
                     if(txt) {
                         wordsounds[txt.word].play()
+                        console.log(txt.word)
                         played += 1
                     }
                 }
@@ -211,6 +253,16 @@ class Zone extends Sprite {
 
             }
         }
+        if(!abort) {
+            [this.saved_i, this.saved_j] = [0,0]
+            this.playing = false
+            envelope.triggerRelease(scr)
+        }
+    }
+
+    pause() {
+        this.paused = true
+        envelope.triggerRelease(sounds['screaminghour'])
     }
 
     draw() {
@@ -226,6 +278,11 @@ class Zone extends Sprite {
     }
 }
 
+class Compose extends Zone {
+    constructor() {
+    }
+}
+
 class Forest extends Zone {
 
     constructor() {
@@ -238,7 +295,8 @@ class Forest extends Zone {
             new Tophat(),
             new Cap(),
             new Cowboy(),
-            new Item('husk', 300, ZONE_HEIGHT - 50)
+            new Item('husk', 300, ZONE_HEIGHT - 50),
+            new Button(),
         ]
 
         this.texts = [
@@ -247,17 +305,6 @@ class Forest extends Zone {
 
     draw() {
         super.draw()
-        this.sprites.forEach((sprite) => {
-            sprite.draw();
-        })
-
-        this.texts.forEach((text) => {
-            text.draw();
-        })
-        fill(0)
-        line(ZONE_WIDTH/4, 0, ZONE_WIDTH/4, ZONE_HEIGHT)
-        line(ZONE_WIDTH/4 * 2, 0, ZONE_WIDTH/4 * 2, ZONE_HEIGHT)
-        line(ZONE_WIDTH/4 * 3, 0, ZONE_WIDTH/4 * 3, ZONE_HEIGHT)
 
         if(this.dots) {
             this.dots.forEach((dot) => {
@@ -307,7 +354,7 @@ class Pond extends Zone {
 
         this.sprites = [
             new Item('lily', 980, 360, {'scale':.6, 'angle': 0,'spawn_y':35}),
-            new Item('minnows', 400, 300, {'scale':.5,'spawn_y':60}),
+            new Item('minnows', 390, 390, {'scale':.4,'spawn_y':60}),
             new Item('stone', 750, 250, {'scale': .7, 'angle': 180, 'spawn_y':20}),
             //new Item('turtle', 
             new Arrow(70, ZONE_HEIGHT/2, "L", "yard"),
@@ -384,10 +431,10 @@ class Text extends Sprite {
     }
 
     overlapping() {
-        var left = this.center_x - this.image.width/2
-        var right = this.center_x + this.image.width/2
-        var top = this.center_y - this.image.height/2
-        var bot = this.center_y + this.image.height/2
+        var left = this.center_x - this.image.width/2 + 2
+        var right = this.center_x + this.image.width/2 - 2
+        var top = this.center_y - this.image.height/2 + 2
+        var bot = this.center_y + this.image.height/2 - 2
 
         if(left < -(this.image.width/2) || right > ZONE_WIDTH + this.image.width/2 || top < -10 || bot > ZONE_HEIGHT + UI_HEIGHT || bot > ZONE_HEIGHT && top < ZONE_HEIGHT) {
             return true
@@ -550,6 +597,7 @@ async function preload() {
             loaded += 1
         })
     })
+    await loadSound('sounds/screaminghour.mp3', (snd) => { sounds['screaminghour'] = snd; snd.setLoop(true)})
 
 }
 
