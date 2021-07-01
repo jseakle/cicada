@@ -15,6 +15,7 @@ var images = {}
 
 var wordsounds = {}
 var sounds = {}
+var starting_words_source
 var starting_words
 
 async function asyncForEach(array, callback) {
@@ -375,11 +376,30 @@ class Leave extends Pressable {
     click() {
         game.zone.pause()
         game.zone.buttons[0].playing = false // :(
+        game.zone.buttons[0].image = images['play_out'] // :(
         game.zone = game.zones['forest']
         sounds['bgm'].setVolume(.2, 1)
     }
 }
 
+class Reset extends Pressable {
+
+    constructor() {
+        super('reset_out')
+        this.set_position(1145, 515)
+        this.scale = .6
+        this.down = images['reset_in']
+        this.up = images['reset_out']
+    }
+
+    click() {
+        if(confirm('Do you want to erase your progress and start an entirely new session?')) {
+            game.zone.pause()
+            game.zone.buttons[0].playing = false // :(
+            game.setup()
+        }
+    }
+}
 
 var envelope = new p5.Envelope(2, .1, 14, .1, 2, 0)
 class Zone extends Sprite {
@@ -484,7 +504,7 @@ class Compose extends Zone {
             new Playpause(),
             new Leave(),
 //            new Save(),
-            //new Restart()
+            new Reset()
         ]        
     }
 
@@ -662,6 +682,12 @@ class Text extends Sprite {
             this.target = createVector(this.old_x, this.old_y)
         } else {
             this.target = undefined
+            if(game.zone.paused) {
+                game.zone.paused = false
+                game.zone.saved_i = 0
+                game.zone.saved_j = 0
+                game.zone.buttons[0].playing = false
+            }
         }
     }
 
@@ -739,7 +765,6 @@ async function mouseReleased() {
 class Game {
 
     constructor() {
-        this.inventory_texts = []
         this.setup()
     }
 
@@ -753,11 +778,14 @@ class Game {
             "barn": new Barn(),
             "compose": new Compose(),
         }
+        Object.values(this.zones).forEach(zone => zone.texts=[])
+        starting_words = starting_words_source
+        this.inventory_texts = []
         this.zone = this.zones["forest"]
         this.muted = false
         sounds['bgm'].play()
         sounds['bgm'].jump(0)
-        sounds['bgm'].setVolume(.2)
+        sounds['bgm'].setVolume(.16)
     }
 
     handle_mute() {
@@ -867,8 +895,10 @@ async function preload() {
     })
     loadSound('sounds/screaminghour.mp3', (snd) => { sounds['screaminghour'] = snd; snd.setLoop(true)})
     await loadSound('sounds/bgm.mp3', (snd) => { sounds['bgm'] = snd; snd.setLoop(true)})
-    await loadJSON('words/starting.json', (wordlist) => starting_words = wordlist)
-
+    await loadJSON('words/starting.json', (wordlist) => {
+        starting_words = wordlist
+        starting_words_source = wordlist
+    })
 }
 
 function txtimg(txt, color) {
