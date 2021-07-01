@@ -6,10 +6,10 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4.3
 var FRAMERATE = 60
 
-var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "turtle", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "slats", "screamingHour1", "screamingHour2", "overlay", "panel", "leave_in", "leave_out", "play_in", "play_out", "pause_in", "pause_out", "download_in", "download_out", "reset_in", "reset_out"]
+var image_names = [ "screamingHour2", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "moss", "leaves", "holes", "minnows", "stone", "turtle", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "slats", "overlay", "panel", "leave_in", "leave_out", "play_in", "play_out", "pause_in", "pause_out", "download_in", "download_out", "reset_in", "reset_out", "gradient", "gradientblue",   "inventory", "cowboy", "cap", "normal", "tophat", "arrowR", "arrowL", "husk", "screamingHour1"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
-var ASSETS_TO_LOAD = image_names.length
+var ASSETS_TO_LOAD = 13
 
 var images = {}
 
@@ -301,6 +301,7 @@ class Button extends Item {
 
     click() {
         game.zone = game.zones['compose']
+        sounds['bgm'].setVolume(0, 1)
     }
 }
 
@@ -375,11 +376,12 @@ class Leave extends Pressable {
         game.zone.pause()
         game.zone.buttons[0].playing = false // :(
         game.zone = game.zones['forest']
+        sounds['bgm'].setVolume(.2, 1)
     }
 }
 
 
-var envelope = new p5.Envelope(2, .3, 14, .3, 2, 0)
+var envelope = new p5.Envelope(2, .1, 14, .1, 2, 0)
 class Zone extends Sprite {
     constructor(name) {
         super(name)
@@ -710,6 +712,12 @@ class Text extends Sprite {
     }
 }
 
+async function keyPressed() {
+    if(key == 'm') {
+        game.handle_mute()
+    }
+}
+
 async function mousePressed() {
     if(mouseButton === LEFT) {
         if(!game.check_drag()) {
@@ -746,6 +754,19 @@ class Game {
             "compose": new Compose(),
         }
         this.zone = this.zones["forest"]
+        this.muted = false
+        sounds['bgm'].play()
+        sounds['bgm'].jump(0)
+        sounds['bgm'].setVolume(.2)
+    }
+
+    handle_mute() {
+        this.muted = !this.muted
+        if(this.muted) {
+            masterVolume(0, .2)
+        } else {
+            masterVolume(1, .2)
+        }
     }
 
     check_drag() {
@@ -815,23 +836,37 @@ class Game {
     }
 }
 
+async function load_chain() {
+    if(image_names.length == 0) {
+        return
+    }
+    
+    loadImage("images/"+image_names[image_names.length-1]+".png", img => {
+        loaded += 1
+        images[image_names[image_names.length-1]] = img
+        image_names.splice(image_names.length-1, 1)
+        load_chain()
+    })
+}
+    
+    
+
 let poem;
 async function preload() {
     //poem = loadFont('Great Pro.ttf')
     //poem = loadFont('Myope.ttf')
     //poem = loadFont('Irony.ttf')
     poem = loadFont('Rank Gold.ttf')
-    await asyncForEach(image_names, (name) => {
-        images[name] = loadImage("images/"+name+".png", img => {
-            loaded += 1
-        })
-    })
+
+    load_chain()
+    
     await asyncForEach(jpg_names, (name) => {
         images[name] = loadImage("images/"+name+".jpg", img => {
             loaded += 1
         })
     })
-    await loadSound('sounds/screaminghour.mp3', (snd) => { sounds['screaminghour'] = snd; snd.setLoop(true)})
+    loadSound('sounds/screaminghour.mp3', (snd) => { sounds['screaminghour'] = snd; snd.setLoop(true)})
+    await loadSound('sounds/bgm.mp3', (snd) => { sounds['bgm'] = snd; snd.setLoop(true)})
     await loadJSON('words/starting.json', (wordlist) => starting_words = wordlist)
 
 }
