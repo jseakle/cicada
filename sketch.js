@@ -317,6 +317,15 @@ class Button extends Item {
         game.zone = game.zones['compose']
         sounds['bgm'].setVolume(0, 1)
     }
+
+    draw() {
+        if(game.inventory_texts.length > 3) {
+            this.image = images['screamingHour2']
+        } else {
+            this.image = images['screamingHour1']
+        }
+        super.draw()
+    }
 }
 
 class Pressable extends Item {
