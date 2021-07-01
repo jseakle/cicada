@@ -19,6 +19,7 @@ var starting_words_source
 var starting_words
 var recorder
 var download
+var ever_recorded = false
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -242,14 +243,19 @@ class Normal extends Cicada {
         this.spawn_y -= 160
         this.sentences = [
             [
-                /*["what", " ", "can"],
-                ["i", " ", "yell"],
-                ["for", " ", "WORD", "?"],*/
                 ["what"],
                 ["can"],
                 ["i"],
                 ["yell"],
                 ["for"],
+                ["WORD", "?"],
+            ],
+            [
+                [],
+                ["do"," ", "you"],
+                ["know"],
+                ["anything"],
+                ["about"], 
                 ["WORD", "?"],
             ]
         ]
@@ -266,6 +272,13 @@ class Tophat extends Cicada {
                 [], [], [],
                 ["of"],
                 ["WORD", "!"],
+            ],
+            [
+                ["now"," ", "we"," ", "are"], 
+                ["to"," ", "scream"],
+                [], [], [],
+                ["about", "..."],
+                ["WORD","."]
             ]
         ]
     }
@@ -281,6 +294,14 @@ class Cap extends Cicada {
                 ["yell", " ", "about"],
                 ["WORD", "...", "?"],
                 ["help", " ", "me", "!"]
+            ],
+            [
+                ["is", " ", "my", " ", "thing"],
+                ["good", " ", "enough"],
+                ["for", " ", "a"],
+                ["WORD"],
+                [],[],
+                ["scream","?"]
             ]
         ]
     }
@@ -298,6 +319,13 @@ class Cowboy extends Cicada {
                 ["WORD"],
                 ["now", " ", "that"],
                 ["would", " ", "be", " ", "fine", "!"]
+            ],
+            [
+                ["well", " ", "what"],
+                ["have", " ", "we"],
+                ["here", "?", " ", "a"],
+                ["scream", " ", "for"],
+                ["WORD", "!"]
             ]
         ]
             
@@ -415,7 +443,11 @@ class Download extends Pressable {
     }
 
     click() {
-        save(download, 'poem.wav')
+        if(ever_recorded) {
+            save(download, 'poem.wav')
+        } else {
+            alert('Play your poem before downloading!')
+        }
     }
 }
 
@@ -447,6 +479,7 @@ class Zone extends Sprite {
     }
 
     async speak(button) {
+        ever_recorded = true
         this.paused = false
         var start = randrange(0,131)
         var scr = sounds['screaminghour']
@@ -566,7 +599,7 @@ class Forest extends Zone {
         super("start")
         this.color = ""
         this.sprites = [
-            new Arrow(ZONE_WIDTH-60, ZONE_HEIGHT/2 + 80, "R", "tree"),
+            new Arrow(ZONE_WIDTH-60, ZONE_HEIGHT/2 + 110, "R", "tree"),
             new Arrow(60, ZONE_HEIGHT/2 + 180, "L", "pond"),
             new Normal(),
             new Tophat(),
@@ -992,8 +1025,6 @@ function setup() {
 }
 
 function draw() {
-    background(220)
-    color(0,0,0);
 
     if(loaded < ASSETS_TO_LOAD) {
         return;
