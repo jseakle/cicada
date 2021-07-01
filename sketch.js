@@ -17,6 +17,8 @@ var wordsounds = {}
 var sounds = {}
 var starting_words_source
 var starting_words
+var recorder
+var download
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -393,6 +395,21 @@ class Leave extends Pressable {
     }
 }
 
+class Download extends Pressable {
+
+    constructor() {
+        super('download_out')
+        this.set_position(1052, 515)
+        this.scale = .6
+        this.down = images['download_in']
+        this.up = images['download_out']
+    }
+
+    click() {
+        save(download, 'poem.wav')
+    }
+}
+
 class Reset extends Pressable {
 
     constructor() {
@@ -428,6 +445,10 @@ class Zone extends Sprite {
         scr.jump(start)
         
         envelope.triggerAttack(scr)
+        recorder = new p5.SoundRecorder();
+        download = new p5.SoundFile()
+        recorder.setInput()
+        recorder.record(download)
 
         var loc_map = {}
         this.texts.forEach((text) => {
@@ -441,6 +462,7 @@ class Zone extends Sprite {
         for(var i=start_i;i<ZONE_HEIGHT&&!abort;i+=3) {
             for(var j=start_j;j<ZONE_WIDTH/4&&!abort;j++) {
                 if(this.paused) {
+                    recorder.stop()
                     console.log('paused_inside')
                     this.saved_i = i
                     this.saved_j = j
@@ -473,6 +495,7 @@ class Zone extends Sprite {
             button.playing = false
             button.image = images['play_out']
             button.depressed = false
+            recorder.stop()
         }
     }
 
@@ -514,7 +537,7 @@ class Compose extends Zone {
         this.buttons = [
             new Playpause(),
             new Leave(),
-//            new Save(),
+            new Download(),
             new Reset()
         ]        
     }
@@ -897,9 +920,6 @@ async function load_chain() {
 
 let poem;
 async function preload() {
-    //poem = loadFont('Great Pro.ttf')
-    //poem = loadFont('Myope.ttf')
-    //poem = loadFont('Irony.ttf')
     poem = loadFont('Rank Gold.ttf')
 
     load_chain()
@@ -915,6 +935,7 @@ async function preload() {
         starting_words = wordlist
         starting_words_source = wordlist
     })
+    
 }
 
 function txtimg(txt, color) {
