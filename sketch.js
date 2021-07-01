@@ -134,6 +134,16 @@ class Arrow extends Sprite {
                 sprite.spoken_words = []
             }
         })
+
+        game.zone.texts.concat(game.inventory_texts).forEach((text) => {
+            if(text.target) {
+                console.log(1)
+                text.set_position(text.target.x, text.target.y)
+                text.target = undefined
+            } else {
+                console.log(text)
+            }
+        })
                                  
         game.zone = game.zones[this.to_zone]
         
@@ -218,6 +228,7 @@ class Cicada extends Item {
                 
             })
             this.spoken = true
+            this.sentence = this.sentence == 1 ? 0 : 1
         }
     }
 }
@@ -680,6 +691,7 @@ class Text extends Sprite {
         this.dragging = false;
         if( this.overlapping() ) {
             this.target = createVector(this.old_x, this.old_y)
+            return true
         } else {
             this.target = undefined
             if(game.zone.paused) {
@@ -724,6 +736,7 @@ class Text extends Sprite {
             this.set_position(mouseX + this.mouse_offset_x, mouseY + this.mouse_offset_y)
         }
         if(this.target) {
+            console.log(this.target)
             var cur_vec = createVector(this.center_x, this.center_y)
             var mov_vec = p5.Vector.sub(this.target, cur_vec)
             if(SLIDE_SPEED >= cur_vec.dist(this.target)) {
@@ -810,7 +823,10 @@ class Game {
         for(var i=0; i<this.zone.texts.length;i++) {
             text = this.zone.texts[i]
             if(text.dragging) {
-                text.stop_dragging();
+                if(text.stop_dragging()) {
+                    break;
+                }
+                    
                 if(this.in_inventory(text)) {
                     this.zone.texts.splice(i, 1)
                     this.inventory_texts.push(text)
