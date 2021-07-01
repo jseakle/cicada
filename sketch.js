@@ -6,7 +6,7 @@ var STROKE_WEIGHT = 5
 var SLIDE_SPEED = 4.3
 var FRAMERATE = 60
 
-var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "screamingHour1", "screamingHour2", "overlay", "panel", "leave_in", "leave_out", "play_in", "play_out", "pause_in", "pause_out", "download_in", "download_out", "reset_in", "reset_out"]
+var image_names = ["gradient", "gradientblue", "gradientpurple", "gradientgreen", "gradientred", "gradientyellow", "gradientbrown", "mushroom", "arrowR", "arrowL", "arrowD", "arrowU", "sky", "birds", "cloud", "sun", "inventory", "cowboy", "cap", "normal", "tophat", "moss", "leaves", "holes", "husk", "minnows", "stone", "turtle", "lily", "dogtoy", "chair", "puff", "ivy", "grasses", "owl", "slats", "screamingHour1", "screamingHour2", "overlay", "panel", "leave_in", "leave_out", "play_in", "play_out", "pause_in", "pause_out", "download_in", "download_out", "reset_in", "reset_out"]
 var jpg_names = ["barn", "yard", "pond", "tree", "start"]
 
 var ASSETS_TO_LOAD = image_names.length
@@ -156,7 +156,11 @@ class Item extends Sprite {
     
     click() {
         var word = choice(this.wordlist)
-        game.zone.texts.push(new Text(word, game.zone.color, this.spawn_x, this.spawn_y))
+        if(this.image == images['turtle']) {
+            game.zone.texts.push(new Text(word, game.zone.color, this.spawn_x + word.length*10, this.spawn_y))
+        } else {
+            game.zone.texts.push(new Text(word, game.zone.color, this.spawn_x, this.spawn_y))
+        }
     }
 }
 
@@ -325,20 +329,24 @@ class Playpause extends Pressable {
     click() {
         if(!this.playing) {
             this.image = images['pause_out']
-            game.zone.speak()
+            game.zone.speak(this)
             this.playing = true
+            console.log('click not playing')
         } else {
             this.image = images['play_out']
             game.zone.pause()
             this.playing = false
+            console.log('click playing')
         }
     }
 
     mouse_down() {
         this.depressed = true
         if(this.playing) {
+            console.log('down playing')
             this.image = images['pause_in']
         } else {
+            console.log('down not playing')
             this.image = images['play_in']
         }
     }
@@ -365,6 +373,7 @@ class Leave extends Pressable {
 
     click() {
         game.zone.pause()
+        game.zone.buttons[0].playing = false // :(
         game.zone = game.zones['forest']
     }
 }
@@ -378,14 +387,15 @@ class Zone extends Sprite {
         this.texts = []
     }
 
-    async speak() {
+    async speak(button) {
         this.paused = false
-        var start = randrange(0,147)
+        var start = randrange(0,131)
         var scr = sounds['screaminghour']
         scr.play()
         scr.jump(start)
         
         envelope.triggerAttack(scr)
+
         var loc_map = {}
         this.texts.forEach((text) => {
             loc_map[str(Math.floor(text.center_x))+","+str(Math.floor(text.center_y))] = text
@@ -396,8 +406,9 @@ class Zone extends Sprite {
         var start_j = this.saved_j || 0
         var abort = false
         for(var i=start_i;i<ZONE_HEIGHT&&!abort;i+=3) {
-            for(var j=start_i;j<ZONE_WIDTH/4&&!abort;j++) {
+            for(var j=start_j;j<ZONE_WIDTH/4&&!abort;j++) {
                 if(this.paused) {
+                    console.log('paused_inside')
                     this.saved_i = i
                     this.saved_j = j
                     abort = true
@@ -418,7 +429,7 @@ class Zone extends Sprite {
                 if(timer == 20) {
                     await sleep(1)
                     timer = 0
-                }
+                } 
                 this.dots = []
 
             }
@@ -426,12 +437,22 @@ class Zone extends Sprite {
         if(!abort) {
             [this.saved_i, this.saved_j] = [0,0]
             envelope.triggerRelease(scr)
+            button.playing = false
+            button.image = images['play_out']
+            button.depressed = false
         }
     }
 
     pause() {
+        console.log('zone pause')
         this.paused = true
+        var amp = new p5.Amplitude()
+        amp.setInput(envelope)
+        envelope.dLevel = amp.getLevel()
+        envelope.rTime = 1
         envelope.triggerRelease(sounds['screaminghour'])
+        envelope.rTime = 2
+        envelope.dLevel = .3
     }
 
     draw() {
@@ -533,7 +554,7 @@ class Tree extends Zone {
             new Item('holes', 440, 305, {'angle':10,'scale':.8}),
             new Item('leaves', 200, 510),
             new Arrow(70, ZONE_HEIGHT/2 + 50, "L", "forest"),
-            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 100, "R", "barn")
+            new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 75, "R", "barn")
         ]
     }
 }
@@ -547,7 +568,7 @@ class Pond extends Zone {
             new Item('lily', 980, 360, {'scale':.6, 'angle': 0,'spawn_y':35}),
             new Item('minnows', 390, 390, {'scale':.4,'spawn_y':60}),
             new Item('stone', 750, 250, {'scale': .7, 'angle': 180, 'spawn_y':20}),
-            //new Item('turtle', 
+            new Item('turtle', 250, 140, {'spawn_x': 30, 'spawn_y': 45}),
             new Arrow(70, ZONE_HEIGHT/2, "L", "yard"),
             new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2 + 180, "R", "forest")
         ]
@@ -578,9 +599,10 @@ class Barn extends Zone {
         this.sprites = [
             new Item('owl', 1000, 490),
             //new Item('slats',
-            new Item('ivy', 450, 395, {'scale': .6, 'spawn_y': 65}),
-            new Item('grasses', 280, 495),
-            new Arrow(70, ZONE_HEIGHT/2 + 90, "L", "tree"),
+            new Item('ivy', 450, 395, {'scale': .6, 'spawn_y': 61}),
+            new Item('grasses', 280, 495, {'spawn_x': -7}),
+            new Item('slats', 603, 245, {'scale': .57, 'angle': -8, 'spawn_y': 47, 'spawn_x': 5}),
+            new Arrow(70, ZONE_HEIGHT/2 + 100, "L", "tree"),
             new Arrow(ZONE_WIDTH-70, ZONE_HEIGHT/2, "R", "yard"),
             new Arrow(2*(ZONE_WIDTH/3) + 130, 55, "U", "sky")
         ]
